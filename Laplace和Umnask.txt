@@ -1,0 +1,84 @@
+close all;
+clear all;
+
+f = imread('test3_corrupt.pgm');
+f = mat2gray(f,[0 255]);
+[M,N] = size(f);
+P = 2*M;
+Q = 2*N;
+
+fc = zeros(M,N);
+
+for x = 1:1:M
+    for y = 1:1:N
+        fc(x,y) = f(x,y) * (-1)^(x+y);
+    end
+end
+
+F = fft2(fc,P,Q);
+
+
+u=-P/2:(P/2-1);
+v=-Q/2:(Q/2-1);
+[U,V]=meshgrid(u,v);
+D=sqrt(U.^2+V.^2);
+c=1;
+D0=100;
+k1=1;k2=1;
+H1=1+c*4*pi^2.*D.^2;  %构造拉普拉斯高通滤波器
+H2=1-exp(-D.^2/2./D0^2);     %构造Unmask高通滤波器
+J1=fftshift(fft2(f,size(H1,1),size(H1,2)));  %转换到频域
+J2=fftshift(fft2(f,size(H2,1),size(H2,2)));  %转换到频域
+G_1=J1.*H1;
+G_2=k1+k2.*J2.*H2;
+
+g_1 = real(ifft2(G_1));
+g_1 = g_1(1:1:M,1:1:N);
+
+g_2 = real(ifft2(G_2));
+g_2 = g_2(1:1:M,1:1:N);         
+
+for x = 1:1:M
+    for y = 1:1:N
+        g_1(x,y) = g_1(x,y) * (-1)^(x+y);
+        g_2(x,y) = g_2(x,y) * (-1)^(x+y);
+    end
+end
+
+figure();
+subplot(3,2,1);
+imshow(f,[0 1]);
+xlabel('a).原图');
+
+subplot(3,2,2);
+pw1=abs(F).^2/128;  
+k=0:length(F)-1;
+w=2*pi*k/128;
+plot(w/pi/2,pw1);
+xlabel('b).原图功率谱');
+
+
+subplot(3,2,3);
+imshow(g_1,[0 1]);
+xlabel('c)Laplace Highpass (D_{0}=20)');
+
+subplot(3,2,4);
+pw2=abs(G_1).^2/128;  
+k=0:length(G_1)-1;
+w1=2*pi*k/128;
+plot(w1/pi/2,pw2);
+xlabel('d).功率谱');
+
+
+
+subplot(3,2,5);
+imshow(g_2,[0 1]);
+xlabel('e).Unmask Highpass (D_{0}=20)');
+
+subplot(3,2,6);
+pw3=abs(G_2).^2/128;  
+k=0:length(G_2)-1;
+w2=2*pi*k/128;
+plot(w2/pi/2,pw3);
+xlabel('f).功率谱');
+

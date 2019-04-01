@@ -1,0 +1,123 @@
+close all;
+clear all;
+
+f = imread('test4 copy.bmp');
+f = mat2gray(f,[0 255]);
+
+[M,N] = size(f);
+P = 2*M;
+Q = 2*N;
+fc = zeros(M,N);
+
+for x = 1:1:M
+    for y = 1:1:N
+        fc(x,y) = f(x,y) * (-1)^(x+y);
+    end
+end
+
+F = fft2(fc,P,Q);
+
+H_1 = zeros(P,Q);
+H_2 = zeros(P,Q);
+
+
+for x = (-P/2):1:(P/2)-1
+     for y = (-Q/2):1:(Q/2)-1
+        D = (x^2 + y^2)^(0.5);
+        D_0 = 20;
+        H_1(x+(P/2)+1,y+(Q/2)+1) = 1/(1+(D/D_0)^2);   
+        H_2(x+(P/2)+1,y+(Q/2)+1) = 1/(1+(D/D_0)^6);
+     end
+end
+H_3 = 1-H_1;
+
+G_1 = H_1 .* F;
+G_2 = H_2 .* F;
+G_3 = H_3 .* F;
+
+g_1 = real(ifft2(G_1));
+g_1 = g_1(1:1:M,1:1:N);
+
+g_2 = real(ifft2(G_2));
+g_2 = g_2(1:1:M,1:1:N);         
+
+g_3 = real(ifft2(G_3));
+g_3 = g_3(1:1:M,1:1:N);   
+
+for x = 1:1:M
+    for y = 1:1:N
+        g_1(x,y) = g_1(x,y) * (-1)^(x+y);
+        g_2(x,y) = g_2(x,y) * (-1)^(x+y);
+        g_3(x,y) = g_3(x,y) * (-1)^(x+y);
+    end
+end
+
+figure();
+subplot(3,3,1);
+imshow(f,[0 1]);
+xlabel('a).原图');
+
+subplot(3,3,2);
+pw1=abs(F).^2/128;  
+k=0:length(F)-1;
+w=2*pi*k/128;
+plot(w/pi/2,pw1);
+xlabel('b).原图功率谱');
+
+
+subplot(3,3,4);
+h = mesh(1:20:P,1:20:Q,H_1(1:20:P,1:20:Q));
+set(h,'EdgeColor','k');
+axis([0 P 0 Q 0 1]);
+xlabel('u');ylabel('v');
+zlabel('c)Butterworth Lowpass (D_{0}=100,n=1)');
+
+
+subplot(3,3,5);
+imshow(g_1,[0 1]);
+xlabel('d).结果');
+
+subplot(3,3,6);
+pw2=abs(G_1).^2/128;  
+k=0:length(G_1)-1;
+w1=2*pi*k/128;
+plot(w1/pi/2,pw2);
+xlabel('e).功率谱');
+
+subplot(3,3,7);
+h = mesh(1:20:P,1:20:Q,H_2(1:20:P,1:20:Q));
+set(h,'EdgeColor','k');
+axis([0 P 0 Q 0 1]);
+xlabel('u');ylabel('v');
+zlabel('f).Butterworth Lowpass (D_{0}=100,n=3');
+
+
+subplot(3,3,8);
+imshow(g_2,[0 1]);
+xlabel('g).结果');
+
+subplot(3,3,9);
+pw3=abs(G_2).^2/128;  
+k=0:length(G_2)-1;
+w2=2*pi*k/128;
+plot(w2/pi/2,pw3);
+xlabel('h).功率谱');
+
+figure();
+subplot(1,3,1);
+h = mesh(1:20:P,1:20:Q,H_3(1:20:P,1:20:Q));
+set(h,'EdgeColor','k');
+axis([0 P 0 Q 0 1]);
+xlabel('u');ylabel('v');
+zlabel('a)Butterworth Highpass (D_{0}=20,n=1)');
+
+subplot(1,3,2);
+imshow(g_3,[0 1]);
+xlabel('b).结果');
+
+subplot(1,3,3);
+pw4=abs(G_3).^2/128;  
+k=0:length(G_3)-1;
+w3=2*pi*k/128;
+plot(w3/pi/2,pw4);
+xlabel('c).功率谱');
